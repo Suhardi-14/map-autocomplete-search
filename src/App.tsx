@@ -1,24 +1,23 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import { useEffect } from "react";
+import "./App.css";
+import MapAutoComplete from "./components/MapAutoComplete";
+import { useCustomDispatch, useCustomSelector } from "./redux/customReduxHooks";
+import { fetchSearchResults } from "./redux/features/searchResults/searchResultSlice";
 
 function App() {
+  const lcoationResult = useCustomSelector((state) => state.searchResult);
+
+  const dispatch = useCustomDispatch();
+
+  useEffect(() => {
+    dispatch(fetchSearchResults());
+  }, []);
+
+  console.log("initial searchInput state", lcoationResult);
+
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <MapAutoComplete />
     </div>
   );
 }
