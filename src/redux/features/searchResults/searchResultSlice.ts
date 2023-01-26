@@ -1,11 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import axios from "axios";
-
-type SearchResultInitialState = {
-  searchResultsLoading: boolean;
-  searchResults: any[];
-  searchResultsError: string;
-};
+import { PlaceType, SearchResultInitialState } from "./searchResult.type";
 
 const initialState: SearchResultInitialState = {
   searchResultsLoading: false,
@@ -13,12 +8,23 @@ const initialState: SearchResultInitialState = {
   searchResultsError: "",
 };
 
+// export const fetchSearchResults = createAsyncThunk(
+//   "searchInputResult/fetchSearchResults",
+//   () => {
+//     return axios
+//       .get("https://jsonplaceholder.typicode.com/users")
+//       .then((res) => res.data);
+//   }
+// );
+
 export const fetchSearchResults = createAsyncThunk(
   "searchInputResult/fetchSearchResults",
-  () => {
-    return axios
-      .get("https://jsonplaceholder.typicode.com/users")
-      .then((res) => res.data);
+  (param: {
+    apiService: any;
+    request: { input: string };
+    callback: (results?: readonly PlaceType[]) => void;
+  }) => {
+    return param.apiService.getPlacePredictions(param.request, param.callback);
   }
 );
 
@@ -33,8 +39,9 @@ const searchResultSlice = createSlice({
     builder.addCase(
       fetchSearchResults.fulfilled,
       (state, action: PayloadAction<any>) => {
+        const { predictions } = action.payload;
         state.searchResultsLoading = false;
-        state.searchResults = action.payload;
+        state.searchResults = predictions;
         state.searchResultsError = "";
       }
     );

@@ -1,76 +1,41 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import Box from "@mui/material/Box";
-import TextField from "@mui/material/TextField";
-import Autocomplete from "@mui/material/Autocomplete";
+import { History } from "@mui/icons-material";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
+import Autocomplete from "@mui/material/Autocomplete";
+import Box from "@mui/material/Box";
 import Grid from "@mui/material/Grid";
+import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
-import parse from "autosuggest-highlight/parse";
 import { debounce } from "@mui/material/utils";
-import axios from "axios";
+import { useGoogleMap } from "@react-google-maps/api";
+import parse from "autosuggest-highlight/parse";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { getGeocode, getLatLng } from "use-places-autocomplete";
+import { useMapApi } from "../provider/MapApiProvider";
+import {
+  useCustomDispatch,
+  useCustomSelector,
+} from "../redux/customReduxHooks";
+import { searched } from "../redux/features/searchInput/searchInputSlice";
+import { PlaceType } from "../redux/features/searchResults/searchResult.type";
+import { fetchSearchResults } from "../redux/features/searchResults/searchResultSlice";
 
-// This key was created specifically for the demo in mui.com.
-// You need to create a new one for your application.
-const GOOGLE_MAPS_API_KEY = "AIzaSyAFCJOvkxuA35sCAAweLzt6NZm9UNMbLTE";
+type MapAutocompleteProps = {
+  setSelected: React.Dispatch<
+    React.SetStateAction<google.maps.LatLng | google.maps.LatLngLiteral | null>
+  >;
+};
 
-function loadScript(src: string, position: HTMLElement | null, id: string) {
-  if (!position) {
-    return;
-  }
-
-  const script = document.createElement("script");
-  script.setAttribute("async", "");
-  script.setAttribute("id", id);
-  script.src = src;
-  position.appendChild(script);
-}
-
-const autocompleteService = { current: null };
-
-interface MainTextMatchedSubstrings {
-  offset: number;
-  length: number;
-}
-interface StructuredFormatting {
-  main_text: string;
-  secondary_text: string;
-  main_text_matched_substrings?: readonly MainTextMatchedSubstrings[];
-}
-interface PlaceType {
-  description: string;
-  structured_formatting: StructuredFormatting;
-}
-
-const MapAutoComplete = () => {
+const MapAutoComplete = ({ setSelected }: MapAutocompleteProps) => {
   const [value, setValue] = useState<PlaceType | null>(null);
   const [inputValue, setInputValue] = useState("");
   const [options, setOptions] = useState<readonly PlaceType[]>([]);
-  const loaded = useRef(false);
-
-  useEffect(() => {
-    axios
-      .get("/", {
-        baseURL: "https://52.89.129.181",
-      })
-      .then((res) => {
-        console.log("server res", res);
-      })
-      .catch((err) => {
-        console.log("server err:", err);
-      });
-  }, []);
-
-  if (typeof window !== "undefined" && !loaded.current) {
-    if (!document.querySelector("#google-maps")) {
-      loadScript(
-        `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`,
-        document.querySelector("head"),
-        "google-maps"
-      );
-    }
-
-    loaded.current = true;
-  }
+  const map = useGoogleMap();
+  const { autocompleteService } = useMapApi();
+  const {
+    searchInput: { searchInputs },
+    searchResult: { searchResults, searchResultsError, searchResultsLoading },
+  } = useCustomSelector((state) => state);
+  const dispatch = useCustomDispatch();
 
   const fetch = useMemo(
     () =>
@@ -79,9 +44,12 @@ const MapAutoComplete = () => {
           request: { input: string },
           callback: (results?: readonly PlaceType[]) => void
         ) => {
-          (autocompleteService.current as any).getPlacePredictions(
-            request,
-            callback
+          dispatch(
+            fetchSearchResults({
+              apiService: autocompleteService.current,
+              request,
+              callback,
+            })
           );
         },
         400
@@ -92,17 +60,12 @@ const MapAutoComplete = () => {
   useEffect(() => {
     let active = true;
 
-    if (!autocompleteService.current && (window as any).google) {
-      autocompleteService.current = new (
-        window as any
-      ).google.maps.places.AutocompleteService();
-    }
     if (!autocompleteService.current) {
       return undefined;
     }
 
     if (inputValue === "") {
-      setOptions(value ? [value] : []);
+      setOptions(value ? [value] : searchInputs);
       return undefined;
     }
 
@@ -115,7 +78,7 @@ const MapAutoComplete = () => {
         }
 
         if (results) {
-          newOptions = [...newOptions, ...results];
+          newOptions = [...newOptions, ...searchResults];
         }
 
         setOptions(newOptions);
@@ -127,29 +90,63 @@ const MapAutoComplete = () => {
     };
   }, [value, inputValue, fetch]);
 
+  const centerSelectedLocation = async (placeId: string) => {
+    const results = await getGeocode({ placeId });
+    const { lat, lng } = getLatLng(results[0]);
+
+    setSelected({ lat, lng });
+    map?.panTo({ lat, lng });
+  };
+
+  console.log("[value, inputValue, options]", [value, inputValue, options]);
+
   return (
     <Autocomplete
       id="google-map-demo"
-      sx={{ width: 300 }}
+      className="bg-white w-96 shadow-md"
       getOptionLabel={(option) =>
         typeof option === "string" ? option : option.description
       }
       filterOptions={(x) => x}
       options={options}
+      loading={searchResultsLoading}
+      openOnFocus
       autoComplete
       includeInputInList
       filterSelectedOptions
+      handleHomeEndKeys={false}
+      clearOnBlur={false}
       value={value}
-      noOptionsText="No locations"
-      onChange={(event: any, newValue: PlaceType | null) => {
-        setOptions(newValue ? [newValue, ...options] : options);
+      noOptionsText={
+        searchResultsError ? "Unexpected Error Occured" : "No location found"
+      }
+      onOpen={(e) => {
+        if (!inputValue) setOptions(searchInputs);
+      }}
+      onChange={async (event: any, newValue: PlaceType | null) => {
+        // setOptions(newValue ? [newValue, ...options] : options);
         setValue(newValue);
+        if (newValue) {
+          if (
+            searchInputs?.filter(
+              (input) => input.place_id === newValue.place_id
+            ).length === 0
+          )
+            dispatch(searched({ ...newValue, category: "search_input" }));
+
+          centerSelectedLocation(newValue.place_id);
+        }
+      }}
+      onHighlightChange={async (e, option) => {
+        if (option) {
+          centerSelectedLocation(option.place_id);
+        }
       }}
       onInputChange={(event, newInputValue) => {
         setInputValue(newInputValue);
       }}
       renderInput={(params) => (
-        <TextField {...params} label="Add a location" fullWidth />
+        <TextField {...params} label="Search a Location on the Map" fullWidth />
       )}
       renderOption={(props, option) => {
         const matches =
@@ -167,7 +164,11 @@ const MapAutoComplete = () => {
           <li {...props}>
             <Grid container alignItems="center">
               <Grid item sx={{ display: "flex", width: 44 }}>
-                <LocationOnIcon sx={{ color: "text.secondary" }} />
+                {option.category === "search_input" ? (
+                  <History sx={{ color: "text.secondary" }} />
+                ) : (
+                  <LocationOnIcon sx={{ color: "text.secondary" }} />
+                )}
               </Grid>
               <Grid
                 item

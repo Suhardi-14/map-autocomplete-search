@@ -1,7 +1,8 @@
 import { createSlice } from "@reduxjs/toolkit";
+import { PlaceType } from "../searchResults/searchResult.type";
 
 type SearchInputInitialState = {
-  searchInputs: any[];
+  searchInputs: PlaceType[];
 };
 const initialState: SearchInputInitialState = {
   searchInputs: [],
@@ -12,7 +13,7 @@ const searchInputSlice = createSlice({
   initialState,
   reducers: {
     searched: (state, action) => {
-      state.searchInputs.push(action.payload);
+      state.searchInputs.unshift(action.payload);
     },
   },
 });

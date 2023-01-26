@@ -10,6 +10,12 @@ import {
   ThemeProvider,
 } from "@mui/material/styles";
 import store from "./redux/store";
+import "@fontsource/roboto/300.css";
+import "@fontsource/roboto/400.css";
+import "@fontsource/roboto/500.css";
+import "@fontsource/roboto/700.css";
+import { CssBaseline } from "@mui/material";
+import MapApiProvider from "./provider/MapApiProvider";
 
 const rootElement = document.getElementById("root") as HTMLElement;
 const root = ReactDOM.createRoot(rootElement);
@@ -34,7 +40,10 @@ root.render(
     <StyledEngineProvider injectFirst>
       <ThemeProvider theme={theme}>
         <Provider store={store}>
-          <App />
+          <MapApiProvider>
+            <CssBaseline />
+            <App />
+          </MapApiProvider>
         </Provider>
       </ThemeProvider>
     </StyledEngineProvider>
