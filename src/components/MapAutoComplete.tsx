@@ -8,7 +8,7 @@ import Typography from "@mui/material/Typography";
 import { debounce } from "@mui/material/utils";
 import { useGoogleMap } from "@react-google-maps/api";
 import parse from "autosuggest-highlight/parse";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { getGeocode, getLatLng } from "use-places-autocomplete";
 import { useMapApi } from "../provider/MapApiProvider";
 import {
@@ -98,8 +98,6 @@ const MapAutoComplete = ({ setSelected }: MapAutocompleteProps) => {
     map?.panTo({ lat, lng });
   };
 
-  console.log("[value, inputValue, options]", [value, inputValue, options]);
-
   return (
     <Autocomplete
       id="google-map-demo"
@@ -124,7 +122,6 @@ const MapAutoComplete = ({ setSelected }: MapAutocompleteProps) => {
         if (!inputValue) setOptions(searchInputs);
       }}
       onChange={async (event: any, newValue: PlaceType | null) => {
-        // setOptions(newValue ? [newValue, ...options] : options);
         setValue(newValue);
         if (newValue) {
           if (

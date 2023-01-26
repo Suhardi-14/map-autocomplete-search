@@ -7,7 +7,6 @@ const store = configureStore({
     searchInput: searchInputReducer,
     searchResult: searchResultReducer,
   },
-  //   middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(),
 });
 
 export default store;

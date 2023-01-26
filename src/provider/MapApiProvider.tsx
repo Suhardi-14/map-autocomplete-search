@@ -1,5 +1,5 @@
 import { useLoadScript } from "@react-google-maps/api";
-import React, { createContext, ReactNode, useContext, useEffect } from "react";
+import { createContext, ReactNode, useContext, useEffect } from "react";
 
 type MapApiContextType = {
   isLoaded: boolean;

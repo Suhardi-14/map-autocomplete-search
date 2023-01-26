@@ -1,5 +1,4 @@
-import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import axios from "axios";
+import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { PlaceType, SearchResultInitialState } from "./searchResult.type";
 
 const initialState: SearchResultInitialState = {
@@ -7,15 +6,6 @@ const initialState: SearchResultInitialState = {
   searchResults: [],
   searchResultsError: "",
 };
-
-// export const fetchSearchResults = createAsyncThunk(
-//   "searchInputResult/fetchSearchResults",
-//   () => {
-//     return axios
-//       .get("https://jsonplaceholder.typicode.com/users")
-//       .then((res) => res.data);
-//   }
-// );
 
 export const fetchSearchResults = createAsyncThunk(
   "searchInputResult/fetchSearchResults",

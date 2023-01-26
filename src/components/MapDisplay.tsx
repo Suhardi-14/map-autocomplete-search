@@ -1,9 +1,4 @@
-import {
-  GoogleMap,
-  InfoBox,
-  InfoWindow,
-  MarkerF,
-} from "@react-google-maps/api";
+import { GoogleMap, MarkerF } from "@react-google-maps/api";
 import { useMemo, useState } from "react";
 import MapAutoComplete from "./MapAutoComplete";
 
